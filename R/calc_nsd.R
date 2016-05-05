@@ -3,14 +3,17 @@
 # Author John Stephen Kayode                                            
 #                                                                       
 # List of input:                                                                 
-# 1. COMPLETE.DATA = (matrix of data for processing)                
-# 2. winsize = (window size for std calculation. Must be odd & >= 3)
-# 3. nsd = (struc_index,winsize,z)                                  
-# 4. dz = (vertical_derivative)                                      
-# 5. zt = (taper2spline)
-# 6. z = in a matrix form
-# 7. s = structural index, 0.5 to 3 by 0.5
+# 
+# 1. winsize = (window size for std calculation. Must be odd & >= 3)
+# 2. nsd = (struc_index,winsize,z)                                  
+# 3. dz = (vertical_derivative)                                      
+# 4. zt = (taper2spline)
+# 5. z = in matrix form
+# 6. s = structural index, 0.5 to 3 by 0.5
 ########################################################################
+
+#install.packages('pracma')
+#install.packages('numDeriv')
 
 calc_nsd <- function(s, winsize, z) {
   # s = structural index, a value of 0.5 to 3 by increments of 0.5
@@ -19,8 +22,10 @@ calc_nsd <- function(s, winsize, z) {
   
   # This function calculates nsd (standard deviation of the 'derivates')
   # This function depends on the convolve and rotate functions
+  library(pracma) # To use the nextpow2 and gradient functions
   source('R/convolve.R')
   source('R/rotate.R')
+  
   
   # Check for sensible values of window size for st dev calculation
   # Window size has to be a square matrix such as 3x3, 5x5, 7x7, etc.
@@ -41,22 +46,26 @@ calc_nsd <- function(s, winsize, z) {
   # This is done by creating a square matrix of 1 and dividing by 
   # the square of the structural index (s)
   # se = 1/s^2
-  
   if (s > 0) {                        
     se = matrix(rep(1,winsize^2),winsize,winsize)/(s * s)
   }
 
-  z = convolve(z, se)
+  # Convolve the 3x3 data if it has a window size of 3
+  z_conv = convolve(z, se)
 
-
-
-  # Compute gradients
+  ## Compute gradients
   
-  (nr, nc) = size(z) 
-  nmax = max([nr, nc])
+  # Determine the dimensions of the data (matrix)
+  n_row <- nrow(z)
+  n_col <- ncol(z)
+  dimensions <- c(n_row,n_col)
+  # Determine the max dimension of the data
+  nmax <- max(dimensions)
+  # calculate npts = next points???
   npts = 2 * nextpow2(nmax)
 
-   (dx, dy) = gradient(z)
+  # Calculate the gradient
+  z_gradient = gradient(z_conv) # A list of two matrices
   dz = vertical(z, npts, nc, nr, 1)
 
   # Compute windowed std of gradients
